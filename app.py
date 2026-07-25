@@ -549,10 +549,18 @@ def translate_text():
     }
     
     start_time = time.time()
+    tps = 0.0
     try:
         response = requests.post("http://localhost:11434/api/chat", json=payload)
         response.raise_for_status()
-        translated_text = response.json().get('message', {}).get('content', '')
+        res_json = response.json()
+        translated_text = res_json.get('message', {}).get('content', '')
+        
+        eval_count = res_json.get('eval_count', 0)
+        eval_duration = res_json.get('eval_duration', 0)
+        if eval_duration > 0:
+            tps = round(eval_count / (eval_duration / 1e9), 2)
+            
         translated_text = translated_text.replace("```markdown", "").replace("```", "").strip()
         
         # Remove single newlines added by the translation model itself (Mode 1 fix)
@@ -562,9 +570,27 @@ def translate_text():
         
     time_taken = round(time.time() - start_time, 1)
     
+    # === SALVAMENTO AUTOMATICO DO HISTORICO DE TESTES (TCC) ===
+    import datetime
+    try:
+        results_dir = os.path.join(os.path.dirname(app.config['UPLOAD_FOLDER']), 'Resultados')
+        os.makedirs(results_dir, exist_ok=True)
+        historico_path = os.path.join(results_dir, "historico_texto_livre.md")
+        with open(historico_path, "a", encoding="utf-8") as f:
+            f.write(f"## Data/Hora: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            f.write(f"- **Modelo:** {model}\n")
+            f.write(f"- **Tempo Total:** {time_taken}s\n")
+            f.write(f"- **Tokens por Segundo (T/s):** {tps}\n\n")
+            f.write(f"### Texto Original ({source_lang})\n{text}\n\n")
+            f.write(f"### Texto Traduzido ({target_lang})\n{translated_text}\n\n")
+            f.write("---\n\n")
+    except Exception as e:
+        print(f"Erro ao salvar historico de texto livre: {e}")
+        
     return jsonify({
         'translated_text': translated_text,
-        'time_taken': time_taken
+        'time_taken': time_taken,
+        'tps': tps
     })
 
 def get_cpu_name():
