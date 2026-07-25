@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Tradução Offline | IF Goiano</title>
+    
+    <!-- Renderizadores de Markdown e LaTeX -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #10b981;
+            --primary-hover: #059669;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --surface-color: #ffffff;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 0.75rem 0;
+            background-color: var(--surface-color);
+            border-bottom: 4px solid var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-content {
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            height: 90px; /* Aumentado para acomodar a logo vertical */
+        }
+
+        .header-titles {
+            border-left: 2px solid var(--border-color);
+            padding-left: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .tagline {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        /* Hardware Monitor Bar */
+        .hardware-bar {
+            width: 100%;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 0.6rem 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            font-size: 0.85rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hw-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: monospace;
+        }
+        
+        .hw-item strong {
+            color: #4ade80; /* Verde destaque */
+            font-family: 'Inter', sans-serif;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1500px;
+            margin-top: 3rem;
+            margin-bottom: 4rem; /* Espaço pro footer */
+            background: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        /* Sistema de Abas */
+        .tabs {
+            display: flex;
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1.2rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+            background-color: #f1f5f9;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: var(--surface-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            margin: 0 auto 20px auto;
+            max-width: 650px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .settings-full-row {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 10px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .setting-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .setting-group select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-family: inherit;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .setting-group select:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* Upload Area (Aba 1) */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 6px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            margin: 0 auto;
+            max-width: 600px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Area de Texto (Aba 2) */
+        .text-area-container {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        /* Botões Gerais */
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Botões de Ícone Discretos */
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary-color);
+            background-color: #f1f5f9;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--primary-color);
+            display: none;
+            padding: 1rem;
+            border-radius: 6px;
+            background: #f0fdf4;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Rodapé Institucional */
+        footer {
+            margin-top: auto;
+            width: 100%;
+            padding: 1rem 0;
+            background-color: var(--surface-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer-logo {
+            height: 45px;
+            opacity: 0.9;
+        }
+
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        /* Grid Lado a Lado */
+        .side-by-side {
+            display: none;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 25px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--primary-color);
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 1rem;
+            transform: translateX(-50%);
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+
+        .toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;} 
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        /* Custom Modal Overlay */
+        .custom-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .custom-modal-overlay.show {
+            display: flex;
+        }
+        .custom-modal-content {
+            background: var(--surface-color);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 450px;
+            max-width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .custom-modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            font-size: 1.25rem;
+        }
+        .custom-modal-content p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .markdown-body pre code {
+            display: block;
+            overflow-x: auto;
+            padding: 1rem;
+        }
+        
+        .katex-display {
+            text-align: center !important;
+            margin: 1.5em 0 !important;
+        }
+        p:has(.katex-display) {
+            text-align: center !important;
+            width: 100%;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .custom-modal-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .custom-modal-btn-cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .custom-modal-btn-cancel:hover {
+            background: #cbd5e1;
+        }
+        .custom-modal-btn-confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+        .custom-modal-btn-confirm:hover {
+            background: var(--primary-hover);
+        }
+
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;} 
+            to {bottom: 0; opacity: 0;}
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            border: 2px solid rgba(0,0,0,0.1);
+            border-left-color: currentColor;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            margin-right: 6px;
+            vertical-align: text-bottom;
+        }
+
+        /* Fullscreen Reader Mode */
+        body.fullscreen-reader header, 
+        body.fullscreen-reader #hw-bar, 
+        body.fullscreen-reader .tabs,
+        body.fullscreen-reader footer {
+            display: none !important;
+        }
+        body.fullscreen-reader .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            height: 100vh;
+        }
+        body.fullscreen-reader #tab-leitura {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .icon-btn {
+            background: none;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            color: #475569;
+            transition: all 0.15s;
+        }
+        .icon-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        /* Reader Toolbar Buttons */
+        .r-btn {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 5px 8px;
+            cursor: pointer;
+            color: #475569;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+        .r-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+        .r-btn-back { background: #f8fafc; }
+        .r-btn-back:hover { background: #e2e8f0; }
+        .r-btn-toggle { }
+        .r-btn-toggle.active { background: #ecfdf5; border-color: #10b981; color: #059669; }
+
+        .r-mode-btn {
+            background: none;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .r-mode-btn:hover { background: #e2e8f0; color: #334155; }
+        .r-mode-active { background: #fff !important; color: #10b981 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Text Layer */
+        #pdf-text-layer {
+            opacity: 0.25;
+        }
+        #pdf-text-layer span {
+            position: absolute;
+            white-space: pre;
+            color: transparent;
+        }
+        #pdf-text-layer span::selection, #pdf-text-layer-2 span::selection {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        /* Cursor para modo comentário */
+        .comment-mode #pdf-container, .comment-mode #pdf-container-2, .comment-mode canvas {
+            cursor: pointer !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <img src="{{ url_for('static', filename='images/31_IF-Goiano_Vertical-Transparente.png') }}" alt="Logo IF Goiano Vertical" class="header-logo">
+            <div class="header-titles">
+                <h1>Sistema de Tradução Offline</h1>
+                <div class="tagline">Processamento Local para Preservação de Confidencialidade</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="hardware-bar" id="hw-bar">
+        <span class="hw-item"><strong>CPU:</strong> <span id="hw-cpu">Monitorando...</span></span>
+        <span class="hw-item"><strong>RAM:</strong> <span id="hw-ram">...</span></span>
+        <span class="hw-item"><strong>GPU:</strong> <span id="hw-gpu">...</span></span>
+        <span class="hw-item"><strong>VRAM:</strong> <span id="hw-vram">...</span></span>
+    </div>
+
+    <div class="container">
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab(event, 'tab-leitura')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                Leitura Assistida
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-texto')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                Tradução de Texto Livre
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-documento')" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Tradução de Documentos
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-modelos')" style="margin-left: auto;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                Gerenciador de Modelos
+            </button>
+        </div>
+
+        <!-- ABA 1: PDF -->
+        <div id="tab-documento" class="tab-content">
+            
+            <div class="settings-panel" id="settings-panel">
+                <div class="setting-group">
+                    <label for="ocr-model-select">Modelo de Extração Visual (OCR)</label>
+                    <select id="ocr-model-select">
+                        <option value="qwen2.5vl:3b">Qwen 2.5 VL (3B)</option>
+                        <option value="qwen2.5vl:7b">Qwen 2.5 VL (7B)</option>
+                        <option value="qwen3-vl:8b-instruct">Qwen 3 VL (8B Instruct)</option>
+                        <option value="qwen2.5vl:32b">Qwen 2.5 VL (32B)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="translation-model-select">Modelo de Tradução (LLM)</label>
+                    <select id="translation-model-select">
+                        <option value="translategemma:4b">TranslateGemma (4B)</option>
+                        <option value="translategemma:12b">TranslateGemma (12B)</option>
+                        <option value="translategemma:27b">TranslateGemma (27B)</option>
+                    </select>
+                </div>
+                <div class="settings-full-row">
+                    <input type="checkbox" id="parallel-mode-checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color);">
+                    <label for="parallel-mode-checkbox" style="cursor: pointer; margin-left: 10px; font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Ativar Execução Paralela (OCR + Tradução Simultâneos)</label>
+                </div>
+            </div>
+            
+            <!-- VRAM Preview Box -->
+            <div id="vram-preview" style="text-align: left; margin: 0 auto 25px auto; max-width: 650px; font-size: 0.85rem; padding: 12px 15px; border-radius: 6px; display: block; line-height: 1.6; background: #f8fafc; border: 1px dashed var(--border-color); color: var(--text-muted);">
+                <div style="text-align: center;">
+                    <span class="spinner" style="color:var(--text-muted)"></span> Analisando Hardware e Calculando Orçamento de GPU...
+                </div>
+            </div>
+
+            <div class="upload-area" id="drop-area" onclick="document.getElementById('fileElem').click()">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <div class="upload-text">Arraste um documento (PDF) aqui</div>
+                <div class="upload-subtext">Ou clique para selecionar nos seus arquivos locais</div>
+                <input type="file" id="fileElem" accept="application/pdf" onchange="handleFiles(this.files)">
+                <button class="btn">Selecionar Arquivo</button>
+            </div>
+            <div class="status" id="status-pdf"></div>
+
+            <!-- Viewer Lado a Lado (Escondido no início) -->
+            <div id="pdf-viewer-container" class="side-by-side">
+                <div style="display: flex; flex-direction: column; min-width: 0;">
+                    <h3 style="margin-top:0; color: var(--text-main);">PDF Original</h3>
+                    <iframe id="pdf-preview" width="100%" height="700px" style="border:1px solid var(--border-color); border-radius:4px; background: #fff;"></iframe>
+                </div>
+                <div style="display: flex; flex-direction: column; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <h3 id="extracted-text-header" style="margin:0; color: var(--text-main); font-size: 1.1rem;">Texto Extraído Bruto</h3>
+                            <span id="extracted-mode-badge" style="display:none; font-size:0.8rem; font-weight:normal; color:var(--text-muted); background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-color); align-self: flex-start;"></span>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="icon-btn" onclick="copyExtractedText()" title="Copiar Texto">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <button class="icon-btn" onclick="downloadTxt()" title="Baixar como .txt">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="extracted-text-panel" style="height: 658px; overflow-y: auto; padding: 25px; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; text-align: justify; box-sizing: border-box; font-size: 0.95rem;">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ABA 2: Texto -->
+        <div id="tab-texto" class="tab-content">
+            
+            <div class="settings-panel" style="margin: 0 auto 25px auto; display: flex; justify-content: center; max-width: 400px; padding: 15px;">
+                <div class="setting-group" style="width: 100%;">
+                    <label for="text-translation-model-select">Modelo de Tradução (LLM)</label>
+                    <select id="text-translation-model-select">
+                        <option value="translategemma:4b">TranslateGemma (4B)</option>
+                        <option value="translategemma:12b">TranslateGemma (12B)</option>
+                        <option value="translategemma:27b">TranslateGemma (27B)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; align-items: start; max-width: 1200px; margin: 0 auto;">
+                
+                <!-- Coluna de Origem -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-main); white-space: nowrap;">Traduzir de:</label>
+                        <select id="source-lang" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); font-family: inherit; outline: none;">
+                            <option value="auto">Detecção Automática</option>
+                            <option value="pt-BR">Português (Brasil)</option>
+                            <option value="en" selected>Inglês</option>
+                            <option value="es">Espanhol</option>
+                            <option value="fr">Francês</option>
+                            <option value="de">Alemão</option>
+                            <option value="it">Italiano</option>
+                            <option value="zh">Chinês</option>
+                            <option value="ja">Japonês</option>
+                            <option value="ru">Russo</option>
+                            <option value="ar">Árabe</option>
+                        </select>
+                    </div>
+                    <textarea id="raw-text-input" placeholder="Cole ou digite o texto aqui..." style="height: 350px; border-radius: 6px; font-size: 1.05rem; line-height: 1.5;"></textarea>
+                </div>
+
+                <!-- Botão Inverter -->
+                <div style="display: flex; align-items: center; justify-content: center; height: 50px;">
+                    <button class="icon-btn" onclick="swapLanguages()" title="Inverter Idiomas" style="background: var(--surface-color); border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg>
+                    </button>
+                </div>
+
+                <!-- Coluna de Destino -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-main); white-space: nowrap;">Traduzir para:</label>
+                        <select id="target-lang" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); font-family: inherit; outline: none;">
+                            <option value="pt-BR" selected>Português (Brasil)</option>
+                            <option value="en">Inglês</option>
+                            <option value="es">Espanhol</option>
+                            <option value="fr">Francês</option>
+                            <option value="de">Alemão</option>
+                            <option value="it">Italiano</option>
+                            <option value="zh">Chinês</option>
+                            <option value="ja">Japonês</option>
+                            <option value="ru">Russo</option>
+                            <option value="ar">Árabe</option>
+                        </select>
+                    </div>
+                    <div style="position: relative;">
+                        <textarea id="translated-text-output" placeholder="Tradução..." readonly style="height: 350px; border-radius: 6px; background: #f8fafc; font-size: 1.05rem; line-height: 1.5;"></textarea>
+                        <button class="icon-btn" onclick="copyTranslatedText()" title="Copiar Tradução" style="position: absolute; top: 10px; right: 10px; background: #fff; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="text-align: center; margin-top: 25px;">
+                <button class="btn" onclick="submitText()" id="btn-traduzir-texto" style="font-size: 1.1rem; padding: 0.8rem 3rem;">
+                    <span id="btn-traduzir-texto-label">Traduzir Texto</span>
+                </button>
+            </div>
+            <div class="status" id="status-text" style="max-width: 800px; margin-top: 20px; text-align: center;"></div>
+            
+        </div>
+
+        <!-- ABA 3: Gerenciador de Modelos -->
+        <div id="tab-modelos" class="tab-content" style="padding: 20px;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h2 style="margin-top:0; font-size: 1.3rem; margin-bottom: 15px;">Modelos de Extração Visual (OCR)</h2>
+                <div id="models-ocr-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom: 40px;">
+                    <!-- Populado via JS -->
+                </div>
+
+                <h2 style="font-size: 1.3rem; margin-bottom: 15px;">Modelos de Tradução (LLM)</h2>
+                <div id="models-translate-list" style="display:flex; flex-direction:column; gap:10px;">
+                    <!-- Populado via JS -->
+                </div>
+            </div>
+        </div>
+        <!-- ABA 4: LEITURA ASSISTIDA -->
+        <div id="tab-leitura" class="tab-content active">
+            
+            <!-- Vista 1: Biblioteca (Upload e Lista) -->
+            <div id="library-view">
+                <div class="upload-area" id="library-drop-area" onclick="document.getElementById('libraryFileElem').click()" style="max-width:800px; margin: 0 auto 30px auto;">
+                    <div class="upload-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    </div>
+                    <div class="upload-text">Arraste um documento (PDF) aqui</div>
+                    <div class="upload-subtext">Ou clique para selecionar nos seus arquivos locais</div>
+                    <input type="file" id="libraryFileElem" accept="application/pdf" onchange="handleLibraryFiles(this.files)" style="display:none;">
+                </div>
+                
+                <h3 id="library-title" style="display:none; max-width:800px; margin: 0 auto 15px auto; color: var(--text-main);">Últimos Documentos</h3>
+                <div id="library-list" style="max-width:800px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 15px;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- Vista 2: Leitor Fullscreen -->
+            <div id="reader-view" style="display:none; width:100%; height:100%; position:relative; background:#d1d5db; overflow-y:auto;">
+                
+                <!-- TOOLBAR -->
+                <div id="reader-toolbar" style="position:fixed; top:0; left:0; width:100%; background:#fff; border-bottom:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.08); display:flex; align-items:center; gap:8px; z-index:200; height:52px; padding:0 12px; box-sizing:border-box;">
+                    
+                    <!-- Esquerda: voltar + zoom -->
+                    <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                        <button class="r-btn r-btn-back" onclick="exitReader()" title="Voltar para a Biblioteca">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        </button>
+                        <button class="r-btn" onclick="openHelpModal()" title="Ver atalhos (Teclado)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        </button>
+                        <button class="r-btn" onclick="zoomOut()" title="Reduzir zoom">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <span id="zoom_percent" style="font-size:0.8rem; font-weight:600; color:#475569; width:45px; text-align:center;">125%</span>
+                        <button class="r-btn" onclick="zoomIn()" title="Aumentar zoom">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+
+                    <!-- Centro: paginação + modos -->
+                    <div style="display:flex; align-items:center; gap:6px; flex:2; justify-content:center;">
+                        <button class="r-btn" onclick="prevPage()" title="Página anterior (←, Q)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            <span style="font-size:0.7em; opacity:0.6; margin-left:2px;">(Q)</span>
+                        </button>
+                        <span style="font-size:0.85rem; color:#334155; font-weight:500; white-space:nowrap;">
+                            Pág. <span id="page_num">1</span> de <span id="page_count">–</span>
+                        </span>
+                        <button class="r-btn" onclick="nextPage()" title="Próxima página (→, E)">
+                            <span style="font-size:0.7em; opacity:0.6; margin-right:2px;">(E)</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                        <div style="width:1px; height:24px; background:#e2e8f0; margin:0 4px;"></div>
+                        <button id="btn-dual" class="r-btn r-btn-toggle" onclick="toggleDualPage()" title="Modo dupla página">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="9" height="18" rx="1"></rect><rect x="13" y="3" width="9" height="18" rx="1"></rect></svg>
+                        </button>
+                    </div>
+
+                    <!-- Direita: modo extração + modelo -->
+                    <div style="display:flex; align-items:center; gap:6px; flex:1; justify-content:flex-end;">
+                        <!-- Modo de Extração -->
+                        <div style="display:flex; background:#f1f5f9; border-radius:8px; padding:2px; gap:2px;">
+                            <button id="btn-mode-text" class="r-mode-btn r-mode-active" onclick="setMode('text')" title="Modo Texto — clique e arraste para selecionar o texto">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                                Texto <span style="font-size:0.7em; opacity:0.6; margin-left:2px;">(1)</span>
+                            </button>
+                            <button id="btn-mode-image" class="r-mode-btn" onclick="setMode('image')" title="Modo Captura — arraste para traduzir uma área (ex: fórmulas ou tabelas)">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                Captura <span style="font-size:0.7em; opacity:0.6; margin-left:2px;">(2)</span>
+                            </button>
+                            <button id="btn-mode-comment" class="r-mode-btn" onclick="setMode('comment')" title="Modo Anotação — clique no PDF para adicionar comentários">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Anotação <span style="font-size:0.7em; opacity:0.6; margin-left:2px;">(3)</span>
+                            </button>
+                        </div>
+                        <div style="width:1px; height:24px; background:#e2e8f0; margin:0 12px;"></div>
+                        <!-- Modelos -->
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label for="reader-ocr-select" style="font-size:0.65rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap;">Extração Visual (OCR)</label>
+                                <select id="reader-ocr-select" style="font-size:0.8rem; border:1px solid #e2e8f0; border-radius:6px; padding:6px 8px; color:#334155; background:#fff; min-width:200px; max-width:260px; cursor:pointer;" title="Modelo OCR (Extração)">
+                                    <option>Carregando OCR...</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label for="reader-model-select" style="font-size:0.65rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap;">Tradução de Texto</label>
+                                <select id="reader-model-select" style="font-size:0.8rem; border:1px solid #e2e8f0; border-radius:6px; padding:6px 8px; color:#334155; background:#fff; min-width:200px; max-width:260px; cursor:pointer;" title="Modelo de Tradução">
+                                    <option>Carregando Tradução...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDF Container (dupla página side-by-side) -->
+                <div id="pdf-wrapper" style="display:flex; justify-content:center; align-items:flex-start; gap:8px; padding: 64px 20px 20px 20px;">
+                    <div id="pdf-container" style="position:relative; box-shadow:0 4px 20px rgba(0,0,0,0.15); border-radius:2px; flex-shrink:0;">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div id="pdf-text-layer" class="textLayer" style="position:absolute; left:0; top:0; right:0; bottom:0; overflow:hidden;"></div>
+                        <canvas id="draw-canvas" style="position:absolute; left:0; top:0; display:none; cursor:crosshair;"></canvas>
+                        <div id="annotations-layer" style="position:absolute; left:0; top:0; right:0; bottom:0; pointer-events:none; overflow:hidden;"></div>
+                    </div>
+                    <!-- Página 2 (modo dupla) -->
+                    <div id="pdf-container-2" style="display:none; position:relative; box-shadow:0 4px 20px rgba(0,0,0,0.15); border-radius:2px; flex-shrink:0;">
+                        <canvas id="pdf-canvas-2"></canvas>
+                        <div id="pdf-text-layer-2" class="textLayer" style="position:absolute; left:0; top:0; right:0; bottom:0; overflow:hidden;"></div>
+                        <canvas id="draw-canvas-2" style="position:absolute; left:0; top:0; display:none; cursor:crosshair;"></canvas>
+                        <div id="annotations-layer-2" style="position:absolute; left:0; top:0; right:0; bottom:0; pointer-events:none; overflow:hidden;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Modal de Confirmação Customizado -->
+        <div id="confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+            <div style="background:#fff; border-radius:12px; padding:28px 32px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+                <p id="confirm-message" style="color:#334155; font-size:1rem; margin:0 0 24px 0; line-height:1.5;"></p>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button id="confirm-cancel" class="btn" style="background:#f1f5f9; color:#64748b; padding:0.5rem 1.2rem;" onmouseenter="this.style.background='#e2e8f0'" onmouseleave="this.style.background='#f1f5f9'">Cancelar</button>
+                    <button id="confirm-ok" class="btn" style="background:#ef4444; padding:0.5rem 1.2rem;" onmouseenter="this.style.background='#dc2626'" onmouseleave="this.style.background='#ef4444'">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div id="help-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+            <div style="background:#fff; border-radius:12px; padding:24px; max-width:400px; width:90%; box-shadow:0 16px 50px rgba(0,0,0,0.15);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px; margin-bottom:16px;">
+                    <h4 style="margin:0; color:#334155; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        Atalhos do Teclado
+                    </h4>
+                    <button class="btn" style="background:none; border:none; padding:4px; color:#94a3b8; cursor:pointer;" onclick="closeHelpModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <ul style="list-style:none; padding:0; margin:0; color:#475569; font-size:0.95rem; line-height:1.8;">
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">1</strong> Ativar Modo Texto</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">2</strong> Ativar Modo Captura</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">3</strong> Ativar Modo Anotação</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">Q / ←</strong> Página Anterior</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">E / →</strong> Próxima Página</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">Ctrl + <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin: 0 1px;"><rect x="5" y="2" width="14" height="20" rx="7"></rect><path d="M12 6v4"></path></svg> ↕</strong> Zoom (Rodinha do Mouse)</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">+ / -</strong> Zoom (Teclado)</li>
+                    <li><strong style="display:inline-block; width:95px; color:#1e293b;">Esc</strong> Fechar popups e anotações</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <img src="{{ url_for('static', filename='images/46_IF-Goiano_Horizontal-Transparente.png') }}" alt="Logo IF Goiano Horizontal" class="footer-logo">
+        <div class="footer-text">
+            &copy; 2026 Alécio Ferreira Vieira Júnior. Todos os direitos reservados.<br>
+            Ferramenta desenvolvida no contexto do Trabalho de Conclusão de Curso (Ciência da Computação).<br>
+            Instituto Federal Goiano - Campus Rio Verde.
+        </div>
+    </footer>
+
+    <script>
+        function renderMarkdownWithMath(text) {
+            const mathBlocks = [];
+            let safeText = text.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            safeText = safeText.replace(/\\\[([\s\S]+?)\\\]/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            safeText = safeText.replace(/\\begin\{equation\*?\}([\s\S]+?)\\end\{equation\*?\}/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            safeText = safeText.replace(/\\begin\{align\*?\}([\s\S]+?)\\end\{align\*?\}/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            safeText = safeText.replace(/\$((?:\\.|[^$\\])+)\$/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            safeText = safeText.replace(/\\\(([\s\S]+?)\\\)/g, (match) => {
+                mathBlocks.push(match);
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+
+            let html = marked.parse(safeText);
+
+            mathBlocks.forEach((block, i) => {
+                html = html.replace(`@@MATH_BLOCK_${i}@@`, block);
+            });
+
+            return html;
+        }
+
+        function openHelpModal() {
+            document.getElementById('help-modal').style.display = 'flex';
+        }
+        function closeHelpModal() {
+            document.getElementById('help-modal').style.display = 'none';
+        }
+        // Lógica das Abas
+        function openTab(evt, tabId) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.className += " active";
+        }
+
+        // Lógica de Drag and Drop (PDF)
+        let dropArea = document.getElementById('drop-area');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false)
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault(); e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false)
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false)
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            let dt = e.dataTransfer; let files = dt.files; handleFiles(files);
+        }, false);
+
+        function handleFiles(files) {
+            if(files.length > 0) {
+                let file = files[0];
+                if(file.type === "application/pdf") {
+                    uploadFile(file);
+                } else {
+                    alert("Formato inválido. O sistema aceita apenas documentos PDF.");
+                }
+            }
+        }
+
+        let currentUploadedFilename = "extracao_texto_bruto.pdf";
+
+        function uploadFile(file) {
+            currentUploadedFilename = file.name;
+
+            let formData = new FormData();
+            formData.append('file', file);
+
+            let status = document.getElementById('status-pdf');
+            status.style.display = "block";
+            status.style.background = "#f0fdf4";
+            status.style.color = "var(--primary-color)";
+            let selectedOcrModel = document.getElementById('ocr-model-select').value;
+            let selectedTModel = document.getElementById('translation-model-select').value;
+            let parallelMode = document.getElementById('parallel-mode-checkbox').checked;
+            status.innerHTML = `<span class="spinner"></span> Inicializando Extração Visual...`;
+            
+            window.isProcessing = true;
+            document.getElementById('vram-preview').style.display = "none";
+
+            fetch('/upload', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    status.textContent = "Erro: " + data.error;
+                    status.style.background = "#fef2f2";
+                    status.style.color = "#d32f2f";
+                } else {
+                    document.getElementById('drop-area').style.display = "none";
+                    document.getElementById('settings-panel').style.display = "none";
+                    document.getElementById('vram-preview').style.display = "none";
+                    status.style.display = "none";
+                    
+                    document.getElementById('pdf-viewer-container').style.display = "grid";
+                    document.getElementById('pdf-preview').src = "/uploads/" + data.filename + "#page=1";
+                    
+                    let ocrSelect = document.getElementById('ocr-model-select');
+                    let tSelect = document.getElementById('translation-model-select');
+                    let ocrName = ocrSelect.options[ocrSelect.selectedIndex].text.split(' -')[0];
+                    let tName = tSelect.options[tSelect.selectedIndex].text.split(' -')[0];
+                    let modeText = parallelMode ? "Paralelo" : "Sequencial";
+                    document.getElementById('extracted-text-header').innerHTML = `Processando: ${ocrName} + ${tName}`;
+                    let badge = document.getElementById('extracted-mode-badge');
+                    badge.innerText = `Modo ${modeText}`;
+                    badge.style.display = "inline-block";
+                    
+                    let panel = document.getElementById('extracted-text-panel');
+                    panel.innerHTML = "";
+                    
+                    // Estrutura de armazenamento das páginas para o toggle
+                    window.pageData = {};
+                    
+                    function renderMarkdownAndMath(elementId, markdownText) {
+                        let el = document.getElementById(elementId);
+                        if (!el) return;
+                        
+                        // Garante que o texto não é nulo e remove espaços laterais
+                        let safeText = (markdownText || "").trim();
+                        
+                        // Evita que recuos acidentais de 4 espaços do OCR gerem blocos de código <pre> (mantém crases para código real)
+                        safeText = safeText.replace(/^( {4,})/gm, '');
+                        
+                        // Pré-processamento de tags LaTeX comuns que o OCR gera e o KaTeX não trata no texto puro
+                        let processedText = safeText
+                            .replace(/^[ \t]*[•◦▪▫►✓][ \t]*/gm, '- ')
+                            .replace(/\\section\{([^}]+)\}/g, '# $1')
+                            .replace(/\\subsection\{([^}]+)\}/g, '## $1')
+                            .replace(/\\subsubsection\{([^}]+)\}/g, '### $1')
+                            .replace(/\\textbf\{([^}]+)\}/g, '**$1**')
+                            .replace(/\\textit\{([^}]+)\}/g, '*$1*')
+                            // Remove preventivamente qualquer tag HTML alucinada pelo OCR (como </div>, <p>, etc) que possa vazar e quebrar o layout da página
+                            .replace(/<\/?(?:div|span|p|html|body|main|section|article|aside|footer|header|nav|style|script)[^>]*>/gi, '');
+                            
+                        el.innerHTML = renderMarkdownWithMath(processedText);
+                        
+                        try {
+                            renderMathInElement(el, {
+                                delimiters: [
+                                    {left: '$$', right: '$$', display: true},
+                                    {left: '$', right: '$', display: false},
+                                    {left: '\\(', right: '\\)', display: false},
+                                    {left: '\\[', right: '\\]', display: true},
+                                    {left: '\\begin{equation}', right: '\\end{equation}', display: true},
+                                    {left: '\\begin{equation*}', right: '\\end{equation*}', display: true},
+                                    {left: '\\begin{align}', right: '\\end{align}', display: true},
+                                    {left: '\\begin{align*}', right: '\\end{align*}', display: true}
+                                ]
+                            });
+                        } catch (err) {
+                            console.error("Erro ao renderizar KaTeX:", err);
+                        }
+                    }
+
+                    // Toggle Function
+                    window.togglePageLang = function(pageNum) {
+                        let data = window.pageData[pageNum];
+                        if (!data) return;
+                        
+                        let contentDiv = document.getElementById(`page-content-${pageNum}`);
+                        let btn = document.getElementById(`toggle-btn-${pageNum}`);
+                        
+                        if (data.current === 'original') {
+                            if (data.translated) {
+                                renderMarkdownAndMath(`page-content-${pageNum}`, data.translated);
+                                data.current = 'translated';
+                                btn.textContent = "Exibir Original";
+                                btn.style.background = "#f0fdf4";
+                                btn.style.color = "var(--primary-color)";
+                            }
+                        } else {
+                            renderMarkdownAndMath(`page-content-${pageNum}`, data.original);
+                            data.current = 'original';
+                            btn.textContent = "Exibir Tradução";
+                            btn.style.background = "#f1f5f9";
+                            btn.style.color = "var(--text-muted)";
+                        }
+                    }
+
+                    // Inicia o Streaming via Server-Sent Events
+                    let selectedOcrCtx = localStorage.getItem('ctx_' + selectedOcrModel) || "8192";
+                    let selectedTransCtx = localStorage.getItem('ctx_' + selectedTModel) || "8192";
+                    let evtSource = new EventSource(`/extract_stream?filename=${data.filename}&model=${encodeURIComponent(selectedOcrModel)}&t_model=${encodeURIComponent(selectedTModel)}&context_ocr=${selectedOcrCtx}&context_translate=${selectedTransCtx}&parallel=${parallelMode}`);
+                    
+                    evtSource.onmessage = function(event) {
+                        let msg = JSON.parse(event.data);
+                        
+                        let indicatorContainer = document.getElementById('streaming-indicators');
+                        if (!indicatorContainer && msg.status !== 'complete' && msg.status !== 'error') {
+                            indicatorContainer = document.createElement('div');
+                            indicatorContainer.id = 'streaming-indicators';
+                            indicatorContainer.style = 'display:flex; flex-direction:column; gap:5px; margin-bottom:15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;';
+                            panel.appendChild(indicatorContainer);
+                        }
+                        
+                        if (msg.status === 'processing_ocr') {
+                            let ocrInd = document.getElementById('ocr-indicator');
+                            if (!ocrInd) {
+                                indicatorContainer.innerHTML += `<div id="ocr-indicator" style="color: var(--primary-color); font-weight: 500; font-size: 0.9rem;"><span class="spinner"></span> Extraindo Visualmente: Página ${msg.page} de ${msg.total}...</div>`;
+                            } else {
+                                ocrInd.innerHTML = `<span class="spinner"></span> Extraindo Visualmente: Página ${msg.page} de ${msg.total}...`;
+                            }
+                        } 
+                        else if (msg.status === 'ocr_done') {
+                            let ocrInd = document.getElementById('ocr-indicator');
+                            if (ocrInd) {
+                                if(msg.page === msg.total) { ocrInd.remove(); }
+                                else { ocrInd.innerHTML = `<span class="spinner"></span> Extraindo Visualmente: Página ${msg.page + 1} de ${msg.total}...`; }
+                            }
+                            
+                            window.pageData[msg.page] = { original: msg.markdown, translated: null, current: 'original' };
+                            
+                            let pageHtml = `
+                                <div id="page-container-${msg.page}" style="margin-bottom: 40px; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom: 1px solid var(--border-color); padding: 12px 20px;">
+                                        <div style="display: flex; gap: 15px; align-items: center;">
+                                            <span style="font-weight: 600; color: var(--text-main); font-size: 1.05rem; cursor: pointer; text-decoration: underline; text-decoration-color: var(--primary-color); text-underline-offset: 4px; transition: color 0.2s;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--text-main)'" onclick="jumpToPage(${msg.page})" title="Pular para a Página ${msg.page}">Página ${msg.page}</span>
+                                            <span style="color: var(--border-color);">|</span>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem;" id="time-ocr-${msg.page}">Extração: ${msg.time}s</span>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem; display:none;" id="time-trans-${msg.page}"></span>
+                                            <span id="trans-indicator-${msg.page}" style="display:none; color: #0ea5e9; font-size: 0.85rem; font-weight: 500;"><span class="spinner" style="color: #0ea5e9;"></span> Traduzindo...</span>
+                                        </div>
+                                        <button id="toggle-btn-${msg.page}" onclick="togglePageLang(${msg.page})" style="display:none; cursor: pointer; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--primary-color); font-size: 0.85rem; font-weight: bold; background: #f0fdf4; color: var(--primary-color); transition: all 0.2s;">Exibir Tradução</button>
+                                    </div>
+                                    <div id="page-content-${msg.page}" style="font-size: 1rem; line-height: 1.8; padding: 30px; background: #fff; overflow-x: auto; text-align: left;">
+                                    </div>
+                                </div>`;
+                                
+                            // Insert before the indicators so indicators stay at the bottom
+                            if (indicatorContainer) {
+                                indicatorContainer.insertAdjacentHTML('beforebegin', pageHtml);
+                            } else {
+                                panel.insertAdjacentHTML('beforeend', pageHtml);
+                            }
+                                
+                            renderMarkdownAndMath(`page-content-${msg.page}`, msg.markdown);
+                            // panel.scrollTop = panel.scrollHeight; removido para não atrapalhar leitura
+                        }
+                        else if (msg.status === 'processing_translation') {
+                            let transIndPage = document.getElementById(`trans-indicator-${msg.page}`);
+                            if (transIndPage) transIndPage.style.display = "inline-block";
+                        }
+                        else if (msg.status === 'translation_done') {
+                            let transIndPage = document.getElementById(`trans-indicator-${msg.page}`);
+                            if (transIndPage) transIndPage.style.display = "none";
+                            
+                            window.pageData[msg.page].translated = msg.markdown;
+                            
+                            let transSpan = document.getElementById(`time-trans-${msg.page}`);
+                            if (transSpan) {
+                                transSpan.innerText = `| Tradução: ${msg.time}s`;
+                                transSpan.style.display = "inline-block";
+                            }
+                            
+                            let btn = document.getElementById(`toggle-btn-${msg.page}`);
+                            btn.style.display = "inline-block";
+                            
+                            window.togglePageLang(msg.page);
+                        }
+                        else if (msg.status === 'complete') {
+                            if (indicatorContainer) indicatorContainer.remove();
+                            evtSource.close();
+                            
+                            function formatTime(seconds) {
+                                let s = Math.round(seconds);
+                                if (s < 60) return `${s} segundos`;
+                                let m = Math.floor(s / 60);
+                                let remS = s % 60;
+                                if (m < 60) return `${m} minuto${m > 1 ? 's' : ''}` + (remS > 0 ? ` e ${remS} segundo${remS > 1 ? 's' : ''}` : '');
+                                let h = Math.floor(m / 60);
+                                let remM = m % 60;
+                                return `${h} hora${h > 1 ? 's' : ''}` + (remM > 0 ? `, ${remM} minuto${remM > 1 ? 's' : ''}` : '') + (remS > 0 ? ` e ${remS} segundo${remS > 1 ? 's' : ''}` : '');
+                            }
+                            
+                            let summaryBox = `
+                            <div style="margin-top: 30px; padding: 15px; border-radius: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-size: 0.9rem;">
+                                <h4 style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 5px;">Processamento Finalizado</h4>
+                                <div style="display: flex; gap: 20px; font-weight: 500; flex-wrap: wrap;">
+                                    <span>Tempo Total (Global): ${formatTime(msg.wall_time)}</span>
+                                    <span>OCR Total (Soma): ${formatTime(msg.ocr_time)}</span>
+                                    <span>Tradução Total (Soma): ${formatTime(msg.trans_time)}</span>
+                                </div>
+                            </div>`;
+                            panel.innerHTML += summaryBox;
+                            panel.scrollTop = panel.scrollHeight;
+                            
+                            let toast = document.getElementById("toast");
+                            toast.innerText = "Processamento Completo!";
+                            toast.className = "toast show";
+                            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+                        } 
+                        else if (msg.status === 'error') {
+                            if (indicatorContainer) indicatorContainer.remove();
+                            evtSource.close();
+                            panel.innerHTML += `<div style="color: red; font-weight: bold; margin-top: 10px; padding: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">Erro fatal: ${msg.message}</div>`;
+                        }
+                    };
+                    
+                    evtSource.onerror = function(err) {
+                        console.error("EventSource falhou:", err);
+                        let indicator = document.getElementById('streaming-status');
+                        if (indicator) indicator.remove();
+                        panel.innerHTML += `<div style="color: red; font-weight: bold; margin-top: 10px;">Erro de conexão com a API Ollama local. Certifique-se de que o Ollama está ativo.</div>`;
+                        evtSource.close();
+                    };
+                }
+            })
+            .catch(() => {
+                status.textContent = "Erro de conexão. Verifique se o servidor local (Flask) está ativo.";
+                status.style.background = "#fef2f2";
+                status.style.color = "#d32f2f";
+            });
+        }
+
+        // Função para Pular de Página no PDF Iframe
+        function jumpToPage(pageNum) {
+            let iframe = document.getElementById('pdf-preview');
+            let src = iframe.src.split('#')[0];
+            let srcBase = src.split('?')[0]; // Limpa query string velha, se houver
+            iframe.src = srcBase + "?v=" + new Date().getTime() + "#page=" + pageNum;
+        }
+
+        // Copiar texto removendo elementos visuais
+        function copyExtractedText() {
+            let panel = document.getElementById('extracted-text-panel');
+            let clone = panel.cloneNode(true);
+            
+            let placeholders = clone.querySelectorAll('.pdf-graphic-placeholder');
+            placeholders.forEach(p => p.remove());
+            let markers = clone.querySelectorAll('.pdf-page-marker');
+            markers.forEach(m => m.remove());
+            
+            navigator.clipboard.writeText(clone.innerText).then(function() {
+                let toast = document.getElementById("toast");
+                toast.textContent = "Texto copiado para a área de transferência!";
+                toast.className = "toast show";
+                setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+            });
+        }
+
+        // Fazer download do texto em formato .txt
+        function downloadTxt() {
+            let panel = document.getElementById('extracted-text-panel');
+            let clone = panel.cloneNode(true);
+            
+            let placeholders = clone.querySelectorAll('.pdf-graphic-placeholder');
+            placeholders.forEach(p => p.remove());
+            let markers = clone.querySelectorAll('.pdf-page-marker');
+            markers.forEach(m => m.remove());
+            
+            let textToSave = clone.innerText;
+            let blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
+            
+            let baseName = currentUploadedFilename.replace(/\.pdf$/i, "");
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = baseName + ".txt";
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            let toast = document.getElementById("toast");
+            toast.textContent = "Download do arquivo .txt iniciado!";
+            toast.className = "toast show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        // Lógica da Aba de Texto
+        
+        function swapLanguages() {
+            let source = document.getElementById('source-lang');
+            let target = document.getElementById('target-lang');
+            let temp = source.value;
+            // Detecção Automática não pode ser 'Traduzir para'
+            if (temp === 'auto') {
+                source.value = target.value;
+                target.value = 'en'; // default fallback
+            } else {
+                source.value = target.value;
+                target.value = temp;
+            }
+        }
+
+        function copyTranslatedText() {
+            let txt = document.getElementById('translated-text-output').value;
+            if (!txt) return;
+            navigator.clipboard.writeText(txt).then(() => {
+                let toast = document.getElementById("toast");
+                toast.textContent = "Tradução copiada com sucesso!";
+                toast.className = "toast show";
+                setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+            });
+        }
+        
+        function submitText() {
+            let text = document.getElementById('raw-text-input').value.trim();
+            let status = document.getElementById('status-text');
+            
+            if(!text) {
+                status.style.display = "block";
+                status.style.background = "#fef2f2";
+                status.style.color = "#d32f2f";
+                status.textContent = "O campo de texto de origem está vazio.";
+                return;
+            }
+
+            let sourceLang = document.getElementById('source-lang');
+            let targetLang = document.getElementById('target-lang');
+            let model = document.getElementById('text-translation-model-select').value;
+            let btnLabel = document.getElementById('btn-traduzir-texto-label');
+            let outputArea = document.getElementById('translated-text-output');
+
+            status.style.display = "block";
+            status.style.background = "#f0fdf4";
+            status.style.color = "var(--primary-color)";
+            status.innerHTML = '<span class="spinner" style="border-left-color: var(--primary-color);"></span> Iniciando tradução do texto...';
+            btnLabel.innerText = "Traduzindo...";
+            outputArea.value = "";
+
+            let sourceName = sourceLang.options[sourceLang.selectedIndex].text;
+            let targetName = targetLang.options[targetLang.selectedIndex].text;
+            let selectedTransCtx = localStorage.getItem('ctx_' + model) || "8192";
+
+            fetch('/translate_text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    text: text,
+                    source: sourceName,
+                    target: targetName,
+                    model: model,
+                    context_translate: selectedTransCtx
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    status.textContent = "Erro: " + data.error;
+                    status.style.background = "#fef2f2";
+                    status.style.color = "#d32f2f";
+                } else {
+                    outputArea.value = data.translated_text;
+                    status.innerHTML = `<strong>Sucesso:</strong> Tradução concluída em ${data.time_taken} segundos.`;
+                }
+                btnLabel.innerText = "Traduzir Texto";
+            })
+            .catch(() => {
+                status.textContent = "Erro de conexão com o servidor local.";
+                status.style.background = "#fef2f2";
+                status.style.color = "#d32f2f";
+                btnLabel.innerText = "Traduzir Texto";
+            });
+        }
+
+        // Dicionário de Estimativa de VRAM por modelo (em GB)
+        const modelVramCosts = {
+            "qwen2.5vl:3b": 3.2,
+            "qwen2.5vl:7b": 6.0,
+            "qwen3-vl:8b-instruct": 6.1,
+            "qwen2.5vl:32b": 21.0,
+            "translategemma:4b": 3.3,
+            "translategemma:12b": 8.1,
+            "translategemma:27b": 17.0
+        };
+
+        function getModelVramCost(modelId) {
+            if (!modelId) return 0.0;
+            if (modelVramCosts[modelId] !== undefined) {
+                return modelVramCosts[modelId];
+            }
+            if (typeof ocrModelsDef !== 'undefined' && typeof translateModelsDef !== 'undefined') {
+                const found = [...ocrModelsDef, ...translateModelsDef].find(m => m.id === modelId);
+                if (found && found.size) {
+                    const parsed = parseFloat(found.size);
+                    if (!isNaN(parsed)) return parsed;
+                }
+            }
+            // Fallback heuristics
+            if (modelId.includes('32b')) return 21.0;
+            if (modelId.includes('27b')) return 17.0;
+            if (modelId.includes('12b')) return 8.1;
+            if (modelId.includes('8b')) return 6.1;
+            if (modelId.includes('7b')) return 6.0;
+            if (modelId.includes('4b')) return 3.3;
+            if (modelId.includes('3b')) return 3.2;
+            return 3.0;
+        }
+
+        function updateVramPreview() {
+            if (!window.totalVramGb) return;
+            if (window.isProcessing) return;
+            
+            let ocrModel = document.getElementById('ocr-model-select').value;
+            let tModel = document.getElementById('translation-model-select').value;
+            let isParallel = document.getElementById('parallel-mode-checkbox').checked;
+            
+            let ocrCost = getModelVramCost(ocrModel);
+            let tCost = getModelVramCost(tModel);
+            
+            // Se for paralelo, a VRAM necessária é a soma. Se sequencial, é apenas o maior modelo que será carregado por vez.
+            let requiredModelVram = isParallel ? (ocrCost + tCost) : Math.max(ocrCost, tCost);
+            
+            // Removido o cálculo do uso do sistema para evitar confusão de quem já tem os modelos rodando
+            let totalEstimated = requiredModelVram;
+            
+            let previewBox = document.getElementById('vram-preview');
+            previewBox.style.display = "block";
+            
+            let breakdownHtml = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem;">
+                    <span style="font-weight:bold;">Consumo de VRAM da GPU:</span> <span><b>${window.totalVramGb.toFixed(1)} GB Total</b></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                    <span>- IA de Leitura Visual (OCR):</span> <span>${ocrCost.toFixed(1)} GB</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; margin-bottom: 5px;">
+                    <span>- IA de Tradução ${isParallel ? '(Simultânea)' : '(Sequencial)'}:</span> <span>${isParallel ? tCost.toFixed(1) : '0.0 (Sobreposto)'} GB</span>
+                </div>
+            `;
+            
+            if (totalEstimated <= window.totalVramGb) {
+                previewBox.style.background = "#f0fdf4";
+                previewBox.style.color = "#15803d";
+                previewBox.style.border = "1px solid #bbf7d0";
+                previewBox.innerHTML = breakdownHtml + `<div style="text-align: right; font-weight: bold; font-size: 0.95rem;">Total Estimado: ${totalEstimated.toFixed(1)} GB <span style="margin-left: 10px;">(Suportado)</span></div>`;
+            } else {
+                previewBox.style.background = "#fef2f2";
+                previewBox.style.color = "#b91c1c";
+                previewBox.style.border = "1px solid #fecaca";
+                previewBox.innerHTML = breakdownHtml + `<div style="text-align: right; font-weight: bold; font-size: 0.95rem;">Total Estimado: ${totalEstimated.toFixed(1)} GB <span style="margin-left: 10px;">(Excede o Limite)</span></div>
+                <div style="margin-top: 8px; font-size: 0.8rem;">*O sistema irá usar RAM compartilhada, o que deixará o processamento severamente lento. Considere desativar a Execução Paralela ou escolher modelos menores.</div>`;
+            }
+        }
+
+        // Attach event listeners aos selects
+        document.getElementById('ocr-model-select').addEventListener('change', updateVramPreview);
+        document.getElementById('translation-model-select').addEventListener('change', updateVramPreview);
+        document.getElementById('parallel-mode-checkbox').addEventListener('change', updateVramPreview);
+
+        // Lógica de Monitoramento de Hardware e Decisão Autônoma
+        function fetchHardwareInfo() {
+            fetch('/system_info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('hw-cpu').textContent = data.cpu || 'N/A';
+                document.getElementById('hw-ram').textContent = data.ram_display || 'N/A';
+                document.getElementById('hw-gpu').textContent = data.gpu_name || 'N/A';
+                document.getElementById('hw-vram').textContent = data.vram_display || 'N/A';
+                
+                // Hardware Awareness Logic
+                if (data.vram_display && data.vram_display.includes('/')) {
+                    // Extrai o Total e o Usado da string "6.3 GB / 8.0 GB"
+                    let parts = data.vram_display.split('/');
+                    let usedVramString = parts[0].trim();
+                    let totalVramString = parts[1].trim();
+                    
+                    window.totalVramGb = parseFloat(totalVramString.split(' ')[0]);
+                    window.usedVramGb = parseFloat(usedVramString.split(' ')[0]);
+                    
+                    let checkbox = document.getElementById('parallel-mode-checkbox');
+                    let ocrSelect = document.getElementById('ocr-model-select');
+                    
+                    if (!window.hardwareChecked) {
+                        let baseOsVram = window.usedVramGb || 1.5;
+                        let maxVram = window.totalVramGb;
+                        
+                        let bestCombo = null;
+                        let maxUtilized = 0;
+                        let cheapestCombo = null;
+                        let minUtilized = Infinity;
+
+                        let ocrOptions = installedModelsList.length > 0 ? ocrModelsDef.map(m=>m.id).filter(id => installedModelsList.includes(id)) : ["qwen2.5vl:3b"];
+                        let tOptions = installedModelsList.length > 0 ? translateModelsDef.map(m=>m.id).filter(id => installedModelsList.includes(id)) : ["translategemma:4b"];
+                        let pOptions = [true, false]; // true = Paralelo, false = Sequencial
+                        
+                        for (let o of ocrOptions) {
+                            for (let t of tOptions) {
+                                for (let p of pOptions) {
+                                    let oCost = modelVramCosts[o];
+                                    let tCost = modelVramCosts[t];
+                                    let requiredModelVram = p ? (oCost + tCost) : Math.max(oCost, tCost);
+                                    let totalEstimated = requiredModelVram + baseOsVram;
+                                    
+                                    if (totalEstimated <= maxVram && totalEstimated > maxUtilized) {
+                                        maxUtilized = totalEstimated;
+                                        bestCombo = { o: o, t: t, p: p };
+                                    }
+                                    if (totalEstimated < minUtilized) {
+                                        minUtilized = totalEstimated;
+                                        cheapestCombo = { o: o, t: t, p: p };
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Se não couber nenhuma (fallback), pega a mais barata
+                        let targetCombo = bestCombo || cheapestCombo;
+                        
+                        ocrSelect.value = targetCombo.o;
+                        document.getElementById('translation-model-select').value = targetCombo.t;
+                        checkbox.checked = targetCombo.p;
+                        
+                        window.hardwareChecked = true;
+                    }
+                    
+                    // Chama a primeira atualização visual de VRAM
+                    updateVramPreview();
+                }
+            })
+            .catch(err => console.error("Erro ao buscar info do hardware"));
+        }
+
+        // Busca ao carregar a página e atualiza a cada 3 segundos
+        fetchHardwareInfo();
+        setInterval(fetchHardwareInfo, 3000);
+
+        // Remove quebras de linha indesejadas do PDF ao colar no tradutor livre
+        document.getElementById('raw-text-input').addEventListener('paste', function(e) {
+            e.preventDefault();
+            let text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            
+            // Normaliza carriage returns
+            text = text.replace(/\r\n/g, '\n');
+            
+            // Divide o texto onde houverem 2 ou mais quebras de linha seguidas (indicativo real de parágrafo)
+            let paragraphs = text.split(/\n{2,}/);
+            
+            // Para cada parágrafo, substitui as quebras de linha isoladas (fim de linha do PDF) por um espaço
+            let cleaned = paragraphs.map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' '));
+            
+            // Rejunta os parágrafos limpos com a dupla quebra de linha
+            let finalStr = cleaned.join('\n\n');
+            
+            // Insere no ponto do cursor
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + finalStr + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + finalStr.length;
+        });
+
+        // ==============================================
+        // Lógica do Gerenciador de Modelos
+        // ==============================================
+        const ocrModelsDef = [
+            { id: "qwen2.5vl:3b", size: "3.2GB" },
+            { id: "qwen2.5vl:7b", size: "6.0GB" },
+            { id: "qwen3-vl:8b-instruct", size: "6.1GB" },
+            { id: "qwen2.5vl:32b", size: "21GB" }
+        ];
+
+        const translateModelsDef = [
+            { id: "translategemma:4b", size: "3.3GB" },
+            { id: "translategemma:12b", size: "8.1GB" },
+            { id: "translategemma:27b", size: "17GB" }
+        ];
+
+        let installedModelsList = [];
+
+        function renderModels() {
+            const renderList = (defList, containerId) => {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                container.innerHTML = '';
+                defList.forEach(m => {
+                    const isInstalled = installedModelsList.includes(m.id);
+                    const safeId = m.id.replace(/[:.]/g, '-');
+                    const btnHtml = isInstalled ? 
+                        `<button class="btn btn-install-${safeId}" style="background:#ef4444; padding:0.5rem 1rem; font-size:0.9rem;" onclick="uninstallModel('${m.id}')">Desinstalar</button>` :
+                        `<button class="btn btn-install-${safeId}" style="background:#10b981; padding:0.5rem 1rem; font-size:0.9rem;" onclick="installModel('${m.id}')">Instalar</button>`;
+                    const statusHtml = isInstalled ? 
+                        `<span style="color:#10b981; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Instalado</span>` :
+                        `<span style="color:#94a3b8; font-size:0.85rem; display:flex; align-items:center; gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Não Instalado</span>`;
+
+                    const savedCtx = localStorage.getItem('ctx_' + m.id) || "8192";
+                    const selectHtml = `
+                        <select onchange="localStorage.setItem('ctx_${m.id}', this.value)" style="padding:0.4rem; border-radius:4px; border:1px solid var(--border-color); font-size:0.85rem; margin-right:10px; background:#fff;">
+                            <option value="2048" ${savedCtx==="2048"?"selected":""}>2K Tokens</option>
+                            <option value="4096" ${savedCtx==="4096"?"selected":""}>4K Tokens</option>
+                            <option value="8192" ${savedCtx==="8192"?"selected":""}>8K Tokens</option>
+                            <option value="16384" ${savedCtx==="16384"?"selected":""}>16K Tokens</option>
+                            <option value="32768" ${savedCtx==="32768"?"selected":""}>32K Tokens</option>
+                        </select>
+                    `;
+
+                    container.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:15px 20px; border:1px solid var(--border-color); border-radius:8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <div><strong style="font-size:1.05rem; color:var(--text-main);">${m.id}</strong> <span style="color:#64748b; font-size:0.9rem; margin-left:8px;">(${m.size})</span></div>
+                                ${statusHtml}
+                            </div>
+                            <div style="display:flex; align-items:center;">
+                                ${selectHtml}
+                                ${btnHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            };
+
+            renderList(ocrModelsDef, 'models-ocr-list');
+            renderList(translateModelsDef, 'models-translate-list');
+            updateDropdowns();
+        }
+
+        function updateDropdowns() {
+            const ocrSelect = document.getElementById('ocr-model-select');
+            const transSelect = document.getElementById('translation-model-select');
+            const textTransSelect = document.getElementById('text-translation-model-select');
+            
+            if(ocrSelect) {
+                const currentOcr = ocrSelect.value;
+                ocrSelect.innerHTML = '';
+                let addedOcr = 0;
+                ocrModelsDef.forEach(m => {
+                    if(installedModelsList.includes(m.id)) {
+                        ocrSelect.innerHTML += `<option value="${m.id}">${m.id} (${m.size})</option>`;
+                        addedOcr++;
+                    }
+                });
+                if(addedOcr === 0) ocrSelect.innerHTML = '<option value="">Nenhum modelo de OCR instalado</option>';
+                if(installedModelsList.includes(currentOcr)) ocrSelect.value = currentOcr;
+            }
+
+            if(transSelect) {
+                const currentTrans = transSelect.value;
+                transSelect.innerHTML = '';
+                let addedTrans = 0;
+                translateModelsDef.forEach(m => {
+                    if(installedModelsList.includes(m.id)) {
+                        transSelect.innerHTML += `<option value="${m.id}">${m.id} (${m.size})</option>`;
+                        addedTrans++;
+                    }
+                });
+                if(addedTrans === 0) transSelect.innerHTML = '<option value="">Nenhum modelo de Tradução instalado</option>';
+                if(installedModelsList.includes(currentTrans)) transSelect.value = currentTrans;
+            }
+
+            if(textTransSelect) {
+                const currentTextTrans = textTransSelect.value;
+                textTransSelect.innerHTML = '';
+                let addedTextTrans = 0;
+                translateModelsDef.forEach(m => {
+                    if(installedModelsList.includes(m.id)) {
+                        textTransSelect.innerHTML += `<option value="${m.id}">${m.id} (${m.size})</option>`;
+                        addedTextTrans++;
+                    }
+                });
+                if(addedTextTrans === 0) textTransSelect.innerHTML = '<option value="">Nenhum modelo de Tradução instalado</option>';
+                if(installedModelsList.includes(currentTextTrans)) textTransSelect.value = currentTextTrans;
+            }
+            
+            // Trigger VRAM preview update after dropdowns are refreshed
+            if(typeof updateVramPreview === 'function') updateVramPreview();
+        }
+
+        function fetchInstalledModels() {
+            fetch('/api/models/installed')
+                .then(r => r.json())
+                .then(data => {
+                    if(data.success) {
+                        installedModelsList = data.models;
+                        renderModels();
+                    }
+                })
+                .catch(e => console.error("Falha ao buscar modelos", e));
+        }
+
+        let modalConfirmAction = null;
+
+        function showCustomModal(title, text, confirmLabel, confirmAction, isAlert = false) {
+            document.getElementById('custom-modal-title').textContent = title;
+            document.getElementById('custom-modal-body').textContent = text;
+            
+            const cancelBtn = document.getElementById('custom-modal-cancel');
+            const confirmBtn = document.getElementById('custom-modal-confirm');
+            
+            confirmBtn.textContent = confirmLabel;
+            
+            if(isAlert) {
+                cancelBtn.style.display = 'none';
+                confirmBtn.onclick = () => { closeCustomModal(); if(confirmAction) confirmAction(); };
+            } else {
+                cancelBtn.style.display = 'inline-block';
+                confirmBtn.onclick = () => {
+                    closeCustomModal();
+                    if(confirmAction) confirmAction();
+                };
+            }
+            
+            document.getElementById('custom-modal').classList.add('show');
+        }
+
+        function closeCustomModal() {
+            document.getElementById('custom-modal').classList.remove('show');
+        }
+
+        let pollingInterval = null;
+
+        function startPollingForModel(modelId) {
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                fetch('/api/models/progress')
+                    .then(r => r.json())
+                    .then(data => {
+                        let prog = data[modelId];
+                        if(prog) {
+                            const safeId = modelId.replace(/[:.]/g, '-');
+                            const installBtns = document.querySelectorAll('.btn-install-' + safeId);
+                            
+                            if(prog.status === 'Concluído') {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                                fetchInstalledModels(); // Atualiza a UI para 'Instalado'
+                                
+                                let toast = document.getElementById("toast");
+                                toast.textContent = `A instalação do modelo ${modelId} foi concluída!`;
+                                toast.className = "toast show";
+                                setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 5000);
+                            } else if(prog.status === 'Erro') {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                                showCustomModal('Erro na Instalação', prog.error || 'Erro desconhecido', 'Fechar', () => { fetchInstalledModels(); }, true);
+                            } else {
+                                installBtns.forEach(btn => {
+                                    btn.style.background = `linear-gradient(90deg, #10b981 ${prog.percent}%, #1e293b ${prog.percent}%)`;
+                                    btn.style.border = 'none';
+                                    btn.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow:1px 1px 2px rgba(0,0,0,0.5);">${prog.percent}%</span>`;
+                                });
+                            }
+                        }
+                    });
+            }, 1000); // Polling a cada 1 segundo para atualização suave
+        }
+
+        function installModel(modelId) {
+            // UI feedback imediato em TODOS os botões desse modelo
+            const safeId = modelId.replace(/[:.]/g, '-');
+            const installBtns = document.querySelectorAll('.btn-install-' + safeId);
+            installBtns.forEach(btn => {
+                btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-color:rgba(255,255,255,0.3);border-left-color:#fff;"></span> Solicitando...';
+                btn.disabled = true;
+            });
+
+            fetch('/api/models/install', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model: modelId})
+            }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    startPollingForModel(modelId);
+                } else {
+                    showCustomModal('Erro na Instalação', data.error, 'Fechar', () => { fetchInstalledModels(); }, true);
+                }
+            }).catch(e => showCustomModal('Erro de Conexão', 'Não foi possível se comunicar com o backend local.', 'Fechar', () => { fetchInstalledModels(); }, true));
+        }
+
+        function uninstallModel(modelId) {
+            showCustomModal(
+                'Confirmação de Desinstalação',
+                `Tem certeza que deseja remover o modelo ${modelId} do seu disco rígido? Isso irá liberar memória.`,
+                'Sim, Remover',
+                () => {
+                    fetch('/api/models/uninstall', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({model: modelId})
+                    }).then(r => r.json()).then(data => {
+                        if(data.success) {
+                            fetchInstalledModels(); // Refresh view
+                            let toast = document.getElementById("toast");
+                            toast.textContent = `O modelo ${modelId} foi desinstalado com sucesso.`;
+                            toast.className = "toast show";
+                            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 4000);
+                        } else {
+                            showCustomModal('Erro ao Desinstalar', data.error, 'Fechar', null, true);
+                        }
+                    }).catch(e => showCustomModal('Erro de Conexão', 'Não foi possível se comunicar com o backend local.', 'Fechar', null, true));
+                }
+            );
+        }
+
+        // Initialize model manager on load
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchInstalledModels();
+        });
+
+    </script>
+    <script src="{{ url_for('static', filename='js/smart_reader.js') }}"></script>
+    <div id="toast" class="toast">Tradução copiada com sucesso!</div>
+
+    <!-- Custom Modal Structure -->
+    <div id="custom-modal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <h3 id="custom-modal-title">Título</h3>
+            <p id="custom-modal-body">Corpo da mensagem</p>
+            <div class="custom-modal-buttons">
+                <button id="custom-modal-cancel" class="custom-modal-btn custom-modal-btn-cancel" onclick="closeCustomModal()">Cancelar</button>
+                <button id="custom-modal-confirm" class="custom-modal-btn custom-modal-btn-confirm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
