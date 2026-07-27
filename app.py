@@ -186,7 +186,10 @@ def extract_stream():
             
             # Prompt em Inglês para evitar que o modelo traduza o texto por conta própria
             # Regra ajustada: Proibido usar '#' para títulos, mas permitido usar negrito (**texto**) para manter a hierarquia visual.
-            prompt_ocr_base = "You are a specialized academic parser. Transcribe the image of this scientific paper page. Strict rules: 1) Preserve tables exactly using Markdown syntax (| Col |). 2) Preserve ALL mathematical equations, variables, and symbols (even single letters) using LaTeX format wrapped in $...$ or $$...$$. DO NOT put spaces immediately inside the $ delimiters. 3) DO NOT use any Markdown headers (#). Instead, use bold text (**text**) for section titles and any text that appears bold in the image. 4) Output ONLY the exact transcribed text in English, without any translation, summaries, or extra comments."
+            if "glm-ocr" in model_ocr:
+                prompt_ocr_base = "Text Recognition:"
+            else:
+                prompt_ocr_base = "You are a specialized academic parser. Transcribe the image of this scientific paper page. Strict rules: 1) Preserve tables exactly using Markdown syntax (| Col |). 2) Preserve ALL mathematical equations, variables, and symbols (even single letters) using LaTeX format wrapped in $...$ or $$...$$. DO NOT put spaces immediately inside the $ delimiters. 3) DO NOT use any Markdown headers (#). Instead, use bold text (**text**) for section titles and any text that appears bold in the image. 4) Output ONLY the exact transcribed text in English, without any translation, summaries, or extra comments."
             prompt_translate_prefix = (
                 "You are a professional English (en) to Portuguese (pt-BR) translator. Your goal is to accurately convey the meaning and nuances of the original English text while adhering to Portuguese grammar, vocabulary, and cultural sensitivities.\n"
                 "CRITICAL INSTRUCTION: Keep all original Markdown formatting (tables, headers, lists) strictly intact. DO NOT translate any LaTeX mathematical formulas or code blocks.\n"
@@ -260,6 +263,15 @@ def extract_stream():
                         response = requests.post("http://localhost:11434/api/chat", json=payload)
                         response.raise_for_status()
                         markdown_text = response.json().get('message', {}).get('content', '')
+                        
+                        # --- DEBUG RAW OCR ---
+                        # Salva o texto bruto EXATAMENTE como saiu do modelo, antes dos nossos filtros Regex,
+                        # para podermos avaliar a estrutura nativa do GLM-OCR ou do Qwen.
+                        raw_md_path = os.path.join(ocr_dir, f'page_{page_num+1}_RAW_NATIVE.md')
+                        with open(raw_md_path, 'w', encoding='utf-8') as f:
+                            f.write(markdown_text)
+                        # ---------------------
+                        
                         markdown_text = markdown_text.replace("```markdown", "").replace("```", "").strip()
                         
                         # Remove resíduos de OCR (linhas com 1 a 3 caracteres isolados)
@@ -876,26 +888,46 @@ def ocr_chunk_image():
     ocr_model = data.get('ocr_model', 'qwen2.5vl:7b')
 
     try:
-        prompt_ocr = (
-            "You are a specialized parser. Extract the text visible in this image. "
-            "Strict rules: 1) Preserve tables using Markdown format. "
-            "2) CRITICAL: You MUST wrap ALL mathematical expressions, variables, and symbols in LaTeX inline delimiters ($...$) or block delimiters ($$...$$). This includes single letters (e.g., $w$, $s$, $z$, $K$), numbers with exponents ($2^b$), subscripts ($q_i$), and small relations ($s > 0$, $K = 32$). If it is math or a variable, it MUST be wrapped. "
-            "3) ALWAYS maintain proper spaces between words, mathematical variables, and numbers (e.g., 'real $w$ e', not 'real$w$e'). "
-            "4) Output ONLY the exact transcribed text, without any explanations or summaries."
-        )
+        if "glm-ocr" in ocr_model:
+            prompt_ocr = "Text Recognition:"
+        else:
+            prompt_ocr = (
+                "You are a specialized parser. Extract the text visible in this image. "
+                "Strict rules: 1) Preserve tables using Markdown format. "
+                "2) CRITICAL: You MUST wrap ALL mathematical expressions, variables, and symbols in LaTeX inline delimiters ($...$) or block delimiters ($$...$$). This includes single letters (e.g., $w$, $s$, $z$, $K$), numbers with exponents ($2^b$), subscripts ($q_i$), and small relations ($s > 0$, $K = 32$). If it is math or a variable, it MUST be wrapped. "
+                "3) ALWAYS maintain proper spaces between words, mathematical variables, and numbers (e.g., 'real $w$ e', not 'real$w$e'). "
+                "4) Output ONLY the exact transcribed text, without any explanations or summaries."
+            )
         ocr_resp = requests.post(
-            "http://localhost:11434/api/generate",
+            "http://localhost:11434/api/chat",
             json={
                 "model": ocr_model,
-                "prompt": prompt_ocr,
-                "images": [image_base64],
+                "messages": [
+                    {"role": "user", "content": prompt_ocr, "images": [image_base64]}
+                ],
                 "stream": False,
                 "options": {"num_ctx": 4096}
             },
             timeout=120
         )
         ocr_result = ocr_resp.json()
-        extracted_text = ocr_result.get('response', '').strip()
+        extracted_text = ocr_result.get('message', {}).get('content', '').strip()
+        
+        # --- DEBUG RAW OCR CROP ---
+        import datetime
+        try:
+            results_dir = os.path.join(os.path.dirname(app.config['UPLOAD_FOLDER']), 'Resultados')
+            os.makedirs(results_dir, exist_ok=True)
+            crop_debug_path = os.path.join(results_dir, "debug_crop_raw.md")
+            with open(crop_debug_path, "w", encoding="utf-8") as f:
+                f.write(f"## Data/Hora: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+                f.write(f"**Modelo:** {ocr_model}\n")
+                f.write("---\n")
+                f.write(extracted_text)
+                f.write("\n---\n")
+        except Exception as e:
+            print("Erro ao salvar debug do crop:", e)
+        # ---------------------
 
         # Normalização de equações LaTeX: converte \( \) para $ $ e \[ \] para $$ $$
         extracted_text = extracted_text.replace(r'\(', '$').replace(r'\)', '$')
@@ -960,7 +992,7 @@ def translate_chunk_markdown():
                 "model": translate_model,
                 "prompt": prompt_trans,
                 "stream": False,
-                "options": {"num_ctx": context_tokens}
+                "options": {"num_ctx": context_tokens, "num_predict": 4096}
             },
             timeout=120
         )
@@ -968,30 +1000,12 @@ def translate_chunk_markdown():
         translated = trans_result.get('response', '').strip()
 
         # === MATH RESTORATION: put the original math blocks back ===
-        prefix_pattern = r'(?:[^\W_]|\]|\))'
-        suffix_pattern = r'(?:[^\W_]|\[|\()'
-        pattern = rf'({prefix_pattern})?(xmathblockx\s*\d+\s*xendx)({suffix_pattern})?'
-        
-        def restore_repl(m):
-            prefix = m.group(1)
-            token_str = m.group(2)
-            suffix = m.group(3)
-            
-            idx_match = re.search(r'\d+', token_str)
-            if not idx_match:
-                return m.group(0)
-            idx = int(idx_match.group(0))
-            if idx < 0 or idx >= len(math_blocks):
-                return m.group(0)
-                
-            block = math_blocks[idx]
-            res = ""
-            if prefix: res += prefix + " "
-            res += block
-            if suffix: res += " " + suffix
-            return res
-            
-        translated = re.sub(pattern, restore_repl, translated, flags=re.IGNORECASE)
+        # Simple and robust: replace each token directly by index.
+        # The LLM may alter casing or spacing inside the token string, so we use
+        # a case-insensitive regex per token to find and replace reliably.
+        for i, block in enumerate(math_blocks):
+            token_pattern = rf'XMATHBLOCKX\s*{i}\s*XENDX'
+            translated = re.sub(token_pattern, lambda m, b=block: b, translated, flags=re.IGNORECASE)
         # ============================================================
 
         # Normalize \( \) -> $ $  and  \[ \] -> $$ $$

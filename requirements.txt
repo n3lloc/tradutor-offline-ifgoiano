@@ -2,3 +2,5 @@ flask
 pymupdf
 psutil
 requests
+nltk
+rouge-score
