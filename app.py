@@ -648,7 +648,7 @@ def get_ram_specs():
             pass
     elif platform.system() == "Linux":
         try:
-            output = subprocess.check_output(["sudo", "-n", "dmidecode", "-t", "memory"], text=True)
+            output = subprocess.check_output(["sudo", "-n", "dmidecode", "-t", "memory"], text=True, stderr=subprocess.DEVNULL)
             speed, ddr = "", ""
             for line in output.split('\n'):
                 if "Speed:" in line and "Unknown" not in line and not speed:
@@ -661,35 +661,113 @@ def get_ram_specs():
             pass
     return specs
 
-@app.route('/system_info', methods=['GET'])
-def system_info():
-    ram_specs = get_ram_specs()
-    ram_display = f"{round(psutil.virtual_memory().used / (1024**3), 1)} GB / {round(psutil.virtual_memory().total / (1024**3), 1)} GB {ram_specs}".strip()
+def estimate_vram_from_name(gpu_name):
+    name_upper = gpu_name.upper()
+    if any(k in name_upper for k in ['4090', '3090', '6000', 'A100', '24GB']):
+        return '24.0 GB'
+    elif any(k in name_upper for k in ['4080', '16GB']):
+        return '16.0 GB'
+    elif any(k in name_upper for k in ['4070 TI', '4070TI', '3080 TI', '3080TI', '12GB']):
+        return '12.0 GB'
+    elif any(k in name_upper for k in ['4070', '3080', '3060 12GB']):
+        return '12.0 GB'
+    elif any(k in name_upper for k in ['3070', '4060', '3060 TI', '3060TI', '2080', '2070', '8GB']):
+        return '8.0 GB'
+    elif '3060' in name_upper:
+        return '12.0 GB'
+    return 'N/A'
 
-    info = {
-        'os': platform.system() + " " + platform.release(),
-        'cpu': get_cpu_name(),
-        'ram_display': ram_display,
-        'gpu_name': 'Nenhum',
-        'vram_display': 'N/A'
-    }
+def get_gpu_info():
+    gpu_name = 'Nenhum'
+    vram_display = 'N/A'
     
-    # Busca informações da NVIDIA GPU via nvidia-smi
+    # 1. Tentar nvidia-smi (NVIDIA em Windows e Linux)
     try:
         kwargs = {}
         if platform.system() == "Windows":
             kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
             
-        output = subprocess.check_output(['nvidia-smi', '--query-gpu=name,memory.total,memory.used', '--format=csv,noheader,nounits'], encoding='utf-8', **kwargs)
-        parts = output.strip().split(', ')
-        if len(parts) >= 3:
-            info['gpu_name'] = parts[0]
-            v_total = round(float(parts[1]) / 1024, 1)
-            v_used = round(float(parts[2]) / 1024, 1)
-            info['vram_display'] = f"{v_used} GB / {v_total} GB"
-    except Exception as e:
-        pass # Falha silenciosa caso nvidia-smi não exista
+        output = subprocess.check_output(
+            ['nvidia-smi', '--query-gpu=name,memory.total,memory.used', '--format=csv,noheader,nounits'],
+            encoding='utf-8', errors='ignore', **kwargs
+        )
+        lines = [line.strip() for line in output.strip().split('\n') if line.strip()]
+        best_name = None
+        max_v_tot = -1
+        best_v_str = 'N/A'
+        for line in lines:
+            parts = line.split(', ')
+            if len(parts) >= 3:
+                g_name = parts[0]
+                try:
+                    v_tot = float(parts[1])
+                    v_usd = float(parts[2])
+                    if v_tot > max_v_tot:
+                        max_v_tot = v_tot
+                        best_name = g_name
+                        best_v_str = f"{round(v_usd / 1024, 1)} GB / {round(v_tot / 1024, 1)} GB"
+                except ValueError:
+                    pass
+        if best_name:
+            return best_name, best_v_str
+    except Exception:
+        pass
+
+    # 2. Fallback para Linux se nvidia-smi falhar
+    if platform.system() == "Linux":
+        try:
+            import glob
+            for fpath in glob.glob('/proc/driver/nvidia/gpus/*/information'):
+                with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        if line.startswith('Model:'):
+                            gpu_name = line.split(':', 1)[1].strip()
+                            break
+                if gpu_name != 'Nenhum':
+                    break
+        except Exception:
+            pass
+
+        try:
+            import glob
+            best_vram = 0
+            best_used = 0
+            for tf in glob.glob('/sys/class/drm/card*/device/mem_info_vram_total'):
+                with open(tf, 'r') as fp:
+                    tot_bytes = int(fp.read().strip())
+                uf = tf.replace('total', 'used')
+                used_bytes = 0
+                if os.path.exists(uf):
+                    with open(uf, 'r') as fp:
+                        used_bytes = int(fp.read().strip())
+                if tot_bytes > best_vram and tot_bytes >= (1024**3):
+                    best_vram = tot_bytes
+                    best_used = used_bytes
             
+            if best_vram > 0:
+                v_tot = round(best_vram / (1024**3), 1)
+                v_usd = round(best_used / (1024**3), 1)
+                vram_display = f"{v_usd} GB / {v_tot} GB"
+            elif gpu_name != 'Nenhum':
+                vram_display = estimate_vram_from_name(gpu_name)
+        except Exception:
+            pass
+
+    return gpu_name, vram_display
+
+@app.route('/system_info', methods=['GET'])
+def system_info():
+    ram_specs = get_ram_specs()
+    ram_display = f"{round(psutil.virtual_memory().used / (1024**3), 1)} GB / {round(psutil.virtual_memory().total / (1024**3), 1)} GB {ram_specs}".strip()
+    gpu_name, vram_display = get_gpu_info()
+
+    info = {
+        'os': platform.system() + " " + platform.release(),
+        'cpu': get_cpu_name(),
+        'ram_display': ram_display,
+        'gpu_name': gpu_name,
+        'vram_display': vram_display
+    }
     return jsonify(info)
 
 @app.route('/api/models/installed', methods=['GET'])
