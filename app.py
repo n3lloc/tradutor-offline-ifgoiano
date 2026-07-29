@@ -3,7 +3,6 @@ import os
 import platform
 import psutil
 import subprocess
-import winreg
 import json
 import fitz  # PyMuPDF
 import base64
@@ -14,6 +13,7 @@ import queue
 import re
 import sqlite3
 import uuid
+import datetime
 
 app = Flask(__name__)
 
@@ -141,7 +141,6 @@ def promote_math_lines(text_input):
                 inner_math = inner_math.rstrip(',.;')
                 
                 lines[i] = f"$${inner_math}{tag_str}$$"
-                print(f"DEBUG promote_math_lines PROMOTED: {lines[i]}")
     return '\n'.join(lines)
 # ==============================
 
@@ -202,7 +201,6 @@ def extract_stream():
             total_trans_time = 0.0
 
             # Criação do diretório Resultados para o Modo de Aprendizado
-            import datetime
             base_filename = os.path.splitext(filename)[0]
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_model_ocr = model_ocr.replace(':', '-')
@@ -264,13 +262,10 @@ def extract_stream():
                         response.raise_for_status()
                         markdown_text = response.json().get('message', {}).get('content', '')
                         
-                        # --- DEBUG RAW OCR ---
-                        # Salva o texto bruto EXATAMENTE como saiu do modelo, antes dos nossos filtros Regex,
-                        # para podermos avaliar a estrutura nativa do GLM-OCR ou do Qwen.
+                        # Salva o Markdown bruto antes dos filtros Regex para referência
                         raw_md_path = os.path.join(ocr_dir, f'page_{page_num+1}_RAW_NATIVE.md')
                         with open(raw_md_path, 'w', encoding='utf-8') as f:
                             f.write(markdown_text)
-                        # ---------------------
                         
                         markdown_text = markdown_text.replace("```markdown", "").replace("```", "").strip()
                         
@@ -433,7 +428,7 @@ def extract_stream():
                     f.write(f"- Modelo OCR: {model_ocr}\n")
                     f.write(f"- Modelo Traducao: {model_translate}\n")
                     f.write(f"- Modo Paralelo: {parallel_mode}\n")
-                    f.write(f"- Zoom (DPI): 1.5 (calculado como 108 DPI)\n")
+                    f.write(f"- Zoom (DPI): 2.0 (calculado como 144 DPI)\n")
                     f.write(f"- Contexto (num_ctx): 4096 (Padrao base do Ollama p/ este modelo)\n\n")
                     f.write("## Métricas por Página\n\n")
                     f.write("| Página | OCR (Tempo) | OCR (Palavras/Chars) | Tradução (Tempo) | Tradução (Palavras/Chars) | T/s (Tokens/s) | Total Tempo |\n")
@@ -583,7 +578,6 @@ def translate_text():
     time_taken = round(time.time() - start_time, 1)
     
     # === SALVAMENTO AUTOMATICO DO HISTORICO DE TESTES (TCC) ===
-    import datetime
     try:
         results_dir = os.path.join(os.path.dirname(app.config['UPLOAD_FOLDER']), 'Resultados')
         os.makedirs(results_dir, exist_ok=True)
@@ -608,6 +602,7 @@ def translate_text():
 def get_cpu_name():
     if platform.system() == "Windows":
         try:
+            import winreg
             key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
             cpu_name, _ = winreg.QueryValueEx(key, "ProcessorNameString")
             return cpu_name.strip()
@@ -848,9 +843,6 @@ def uninstall_model():
 # ROTAS DA BIBLIOTECA (LEITURA ASSISTIDA)
 # ==========================================
 
-@app.route('/uploads/<path:filename>')
-def download_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/api/library/upload', methods=['POST'])
 def library_upload():
@@ -991,8 +983,7 @@ def ocr_chunk_image():
         ocr_result = ocr_resp.json()
         extracted_text = ocr_result.get('message', {}).get('content', '').strip()
         
-        # --- DEBUG RAW OCR CROP ---
-        import datetime
+        # Salva o resultado bruto do OCR de captura para referência
         try:
             results_dir = os.path.join(os.path.dirname(app.config['UPLOAD_FOLDER']), 'Resultados')
             os.makedirs(results_dir, exist_ok=True)
@@ -1004,8 +995,7 @@ def ocr_chunk_image():
                 f.write(extracted_text)
                 f.write("\n---\n")
         except Exception as e:
-            print("Erro ao salvar debug do crop:", e)
-        # ---------------------
+            print(f"Erro ao salvar log do crop: {e}")
 
         # Normalização de equações LaTeX: converte \( \) para $ $ e \[ \] para $$ $$
         extracted_text = extracted_text.replace(r'\(', '$').replace(r'\)', '$')

@@ -4,7 +4,8 @@ Este repositório contém o código-fonte do Sistema de Tradução Offline e Con
 
 ---
 
-## 📖 Visão Geral e Contexto Acadêmico
+## Visão Geral e Contexto Acadêmico
+
 O objetivo central deste sistema é permitir que estudantes, pesquisadores e acadêmicos leiam e traduzam documentos científicos complexos (PDFs com duas colunas, equações, tabelas e jargões técnicos) rompendo a barreira linguística. 
 
 O grande diferencial deste projeto, no contexto de pesquisa, é o foco em **Privacidade e Custo Zero**. Todo o processamento de Extração Ótica (OCR) e Tradução é feito por Modelos de Visão e Linguagem (VLM) executados **100% localmente** na máquina do usuário. Dessa forma, nenhum artigo inédito (pré-print ou sob revisão por pares) precisa ser enviado para APIs em nuvem (como OpenAI ou Google), garantindo total sigilo de dados sensíveis da pesquisa.
@@ -18,7 +19,7 @@ O grande diferencial deste projeto, no contexto de pesquisa, é o foco em **Priv
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 1. **Leitura Assistida**: Renderização de PDFs científicos lado-a-lado (Single ou Dual Page). O usuário desenha uma área de seleção sobre um parágrafo complexo, o sistema tira um snapshot silencioso e aciona a IA local para fazer o OCR e a Tradução In-Place, preservando até mesmo equações matemáticas (LaTeX).
 2. **Gerenciador de Modelos Integrado**: Os usuários não precisam mais usar linha de comando. Através da interface do sistema, é possível gerenciar (baixar, atualizar, apagar) Modelos de Inteligência Artificial. O sistema calcula proativamente o uso estimado de VRAM da GPU para avisar se o hardware suportará a carga.
@@ -26,10 +27,13 @@ O grande diferencial deste projeto, no contexto de pesquisa, é o foco em **Priv
 
 ---
 
-## 🧠 Modelos Disponíveis (Homologados)
+## Modelos Disponíveis (Homologados)
+
 O sistema reconhece e lista nativamente excelentes modelos locais com foco acadêmico. **Você pode instalá-los com um único clique direto pela aba de Gerenciador de Modelos do sistema.**
 
 **Modelos Multimodais (Extração Visual e OCR - VLM):**
+*   `glm-ocr:q8_0` (Modelo de 0,9 bilhões de parâmetros, tamanho/consumo de 1.6GB - Quantizado Q8)
+*   `glm-ocr:bf16` (Modelo de 0,9 bilhões de parâmetros, tamanho/consumo de 2.2GB - BFloat16)
 *   `qwen2.5vl:3b` (Modelo de 3 bilhões de parâmetros, tamanho/consumo de 3.2GB)
 *   `qwen2.5vl:7b` (Modelo de 7 bilhões de parâmetros, tamanho/consumo de 6.0GB)
 *   `qwen3-vl:8b-instruct` (Modelo de 8 bilhões de parâmetros, tamanho/consumo de 6.1GB)
@@ -42,7 +46,7 @@ O sistema reconhece e lista nativamente excelentes modelos locais com foco acad�
 
 ---
 
-## 🚀 Guia Direto de Instalação
+## Guia Direto de Instalação
 
 ### 1. Instalação do Motor de IA Local
 Todo o peso cognitivo ocorre via **Ollama**.
